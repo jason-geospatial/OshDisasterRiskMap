@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<!--Example using Mapbox GL Javascript to create 3D extruded buildings. Source: https://www.mapbox.com/mapbox-gl-js/example/3d-buildings/ -->
+<head>
+    <meta charset='utf-8' />
+    <title>Osh Risk Mapping</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.41.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.41.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; width:100%; height:100%; }
+        .mapboxgl-popup { max-width: 400px; font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;}
+    	.settings{
+    		position:absolute;
+    		right:0px;
+    		top:0px;
+    		width:15%;
+    		background-color: #202020;
+    	}
+    	#buttons {width: 100%;}
+    	.button {
+        display: inline-block;
+        position: relative;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 3px;
+        margin: 5px;
+        font-size: 12px;
+        text-align: center;
+        color: #fff;
+        background: #ee8a65;
+        font-family: sans-serif;
+        font-weight: bold;    
+    	}
+    	#features {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 300px;
+        background: #202020;
+        color:#fff;
+    	}
+    	#feature-title {
+    	position:relative;
+    	padding:5px;
+    	margin-left: 5px;
+        margin-top: 2px;
+        margin-bottom: 2px;
+        margin-right: 5px;
+        font-weight: bold; 
+    	}
+    	#feature-content{
+    	position:relative;
+    	}
+    	#slidebutton {
+        position: relative;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 3px;
+        margin-top: 10px;
+        font-size: 12px;
+        color: #fff;
+        background: #ee8a65;
+        font-family: sans-serif;
+        font-weight: bold;
+        bottom: 0px;    
+        text-align: center;
+    	}
+    </style>
+</head>
+<body>
+
+<!--buttons for language switching -->
+<div id='map'></div>
+
+<div class='settings'>
+	<ul id="buttons">
+    	<li id='button-en' class='button'>Eng</li>
+    	<br>
+    	<li id='button-ru' class='button'>Рус</li>
+    	<br>
+    	<li id='button-ky' class='button'>Кыр</li>
+	</ul>
+</div>
+
+<div id='features'>
+	<div id='feature-title'></div>
+	<div id='feature-content'></div>
+	<div id='slidebutton'>Next slide</div>
+</div>
+
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoibWFkc2tpaWVyIiwiYSI6ImNpb2ZnaXVteTAwM3p2cGo3aHhqYnBkbWMifQ.cEswY6uB1-saGXwbS82DWA';
+var map = new mapboxgl.Map({
+    style: 'mapbox://styles/mapbox/dark-v9',
+    center: [72.8005, 40.5501], 
+    zoom: 15,
+    pitch: 45,
+    bearing: -17.6,
+    hash: true,
+    container: 'map'
+});
+
+var title = document.getElementById('feature-title');
+var description = document.getElementById('feature-content');
+
+var locations = [
+	{
+    	"id":"1",
+    	"title":"Disaster Risk in Osh",
+    	"description":"Osh faces challenges with small fires, flooding, and earthquakes. By getting citizens involved in mapping areas at risk, a network of thousands of volunteers can help prevent accidents before they happen.",
+    	"camera": {
+    		center:[72.800169, 40.548592],
+    		zoom:15,
+    		pitch:50
+    	}
+    }
+	,{
+    	"id":"2",
+    	"title":"Pavement Floods",
+    	"description":"Paved and asphalt roads (in red) don't allow rainwater to soak into the ground, and raise the risk of flooding. Special attention should be taken with the drainage systems around paved roads.",
+    	"camera": {
+    		center:[72.800169, 40.548592],
+    		zoom:15,
+    		pitch:50
+    	}
+    }
+    ,{
+    "id":"3",
+    	"title":"Missing service",
+    	"description":"Densely packed neighbourhoods require more services such as police and fire stations nearby to ensure safety.",
+    	"camera": {
+    		center:[72.81207740, 40.5276211],
+    		zoom:16,
+    		pitch:30
+    	}	
+    }];
+
+//function to make the camera pan to the next slide    
+function playback(index) {
+    title.textContent = locations[index].title;
+    description.textContent = locations[index].description;
+
+    // Animate the map position based on camera properties
+    map.flyTo(locations[index].camera);
+}
+
+map.on('load', function() {
+
+	//Load external GeoJSON files
+	map.addSource("paved-roads", {
+            "type": "geojson",
+            "data": "Osh_OSM/paved_roads.geojson"
+        });
+	map.addSource("servicesgeojson", {
+            "type": "geojson",
+            "data": "Osh_OSM/shelters.geojson"
+        });
+
+	// Add zoom and rotation controls to the map.
+	map.addControl(new mapboxgl.NavigationControl());
+
+    // Insert the building-height (from OSM) layer beneath any symbol layer.
+    var layers = map.getStyle().layers.reverse();
+    var labelLayerIdx = layers.findIndex(function (layer) {
+        return layer.type !== 'symbol';
+    });
+    var labelLayerId = labelLayerIdx !== -1 ? layers[labelLayerIdx].id : undefined;
+    
+    
+
+    // Add layers
+    map.addLayer({
+            "id": "riskroads",
+            "type": "line",
+            "source": "paved-roads",
+         	"paint":{
+         		"line-color":"#ff0000",
+         		"line-width":3
+         	},  
+        });
+
+    map.addLayer({
+            "id": "services",
+            "type": "circle",
+            "source": "servicesgeojson",  
+         	"properties": {
+                        "description": "<strong>City Services</strong><p>Hospitals and police stations to ask for help.</p>"
+            }
+            ,"paint":{
+            	"circle-color":"#e5efc6"
+            }
+        });
+
+    map.addLayer({
+        'id': '3d-buildings',
+        'source': 'composite',
+        'source-layer': 'building',
+        'filter': ['==', 'extrude', 'true'],
+        'type': 'fill-extrusion',
+        'minzoom': 13,
+        'paint': {
+            //pale yellow -  'fill-extrusion-color': '#e5efc6',
+            //Colour the buildings by their height
+            'fill-extrusion-color': { 
+            	'property': 'height',
+            	'stops':[
+            	[0, '#f09422'],
+            	[50, '#adff2f']
+            	]
+            },	
+            'fill-extrusion-height': {
+                'type': 'identity',
+                'property': 'height'
+            },
+            'fill-extrusion-base': {
+                'type': 'identity',
+                'property': 'min_height'
+            },
+            'fill-extrusion-opacity': .6
+        }
+    }, labelLayerId);
+ 
+    // Create a popup, but don't add it to the map yet.
+    var popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+    });
+    // Hover event
+    map.on('mouseenter', 'services', function(e) {
+        // Change the cursor style as a UI indicator.
+        map.getCanvas().style.cursor = 'pointer';
+        // Populate the popup and set its coordinates
+        // based on the feature found.
+        popup.setLngLat(e.features[0].geometry.coordinates)
+            .setHTML('<h3>City Service</h3>' +
+            	'<ul>' +
+            	'<li>Name: <b>' + e.features[0].properties.name + '</b></li>' +
+            	'<li>Service: <b>' + e.features[0].properties.amenity + '</b></li>' +
+            	'<li>Phone #: <b>' + e.features[0].properties.phone + '</b></li>' +
+            	'</ul>')
+            .addTo(map);
+    });
+
+    map.on('mouseleave', 'services', function() {
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+    });
+
+    // Click on features to get their OSM data
+    map.on('click', function (e) {
+    var features = map.queryRenderedFeatures(e.point);
+    document.getElementById('features').innerHTML = JSON.stringify(features, null, 2);	
+	});
+    //To change the language of the map data
+    document.getElementById('buttons').addEventListener('click', function(event) {
+    var language = event.target.id.substr('button-'.length);
+    // Use setLayoutProperty to set the value of a layout property in a style layer.
+    // The three arguments are the id of the layer, the name of the layout property,
+    // and the new property value.
+    map.setLayoutProperty('country-label-lg', 'text-field', '{name_' + language + '}');
+	});
+
+    //Pans the camera to the next location on "locations" when the slidebutton is clicked
+	index = 0;
+    document.getElementById('slidebutton').addEventListener('click', function(event) {
+        index = (index + 1 === locations.length) ? 0 : index + 1;
+            playback(index);
+    });
+    // Start the playback animation for the prepared slides
+    playback(index);
+});
+</script>
+</body>
+</html>
