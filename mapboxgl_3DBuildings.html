@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html>
+<!--Example using Mapbox GL Javascript to create 3D extruded buildings. Source: https://www.mapbox.com/mapbox-gl-js/example/3d-buildings/ -->
+<head>
+    <meta charset='utf-8' />
+    <title>Osh Risk Mapping</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.41.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.41.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; width:100%; height:100%; }
+        .mapboxgl-popup { max-width: 400px; font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;}
+    	.settings{
+    	position:absolute;
+    	right:0px;
+    	top:0px;
+    	width:10%;
+    	background-color: #343332;
+    	border-radius: 3px;
+    	}
+    	#buttons {position:relative;left:0px;top:0px;}
+    	.button {
+        display: inline-block;
+        position: relative;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 3px;
+        margin: 5px;
+        font-size: 12px;
+        text-align: center;
+        color: #fff;
+        background: #ee8a65;
+        font-family: sans-serif;
+        font-weight: bold;    
+    	}
+    	#features {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 300px;
+        background: #343332;
+        color:#fff;
+        border-radius: 3px;
+        text-align: justify;
+    	text-justify: auto;
+    	}
+    	#feature-title {
+    	position:relative;
+    	padding:5px;
+    	margin-left: 5px;
+        margin-top: 2px;
+        margin-bottom: 2px;
+        margin-right: 5px;
+        font-weight: bold; 
+        font-family: sans-serif;
+    	}
+    	#feature-content{
+    	position:relative;
+    	margin:5px;
+    	font-family: sans-serif;
+    	}
+    	#backbutton {
+    	display:inline-block;
+        position: relative;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 3px;
+        margin-top: 5px;
+        margin-bottom:5px;
+        font-size: 12px;
+        color: #fff;
+        background: #ee8a65;
+        font-family: sans-serif;
+        font-weight: bold;
+        bottom: 0px;    
+        text-align: center;
+        width:40%;
+    	}
+    	#slidebutton {
+    	display:inline-block;
+        position: relative;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 3px;
+        margin-top: 5px;
+        margin-bottom:5px;
+        font-size: 12px;
+        color: #fff;
+        background: #ee8a65;
+        font-family: sans-serif;
+        font-weight: bold;
+        bottom: 0px;    
+        text-align: center;
+        width:40%;
+        right:0px;
+    	}
+    	#menu {
+        background: #b0c4dd;
+        position: relative;
+        z-index: 1;
+        border-radius: 3px;
+        font-family: sans-serif;
+   		 }
+   		#menu a {
+        font-size: 13px;
+        color: #404040;
+        display: block;
+        margin: 0;
+        padding: 10px;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(0,0,0,0.25);
+        text-align: center;
+    	}
+    	#menu a:last-child {border: none;}
+    	#menu a:hover {background-color: #3074a4;color: #ffffff;}
+    	#menu a.active {background-color: #3887be;color: #ffffff;}
+    	#menu a.active:hover {background: #3074a4;}
+    </style>
+</head>
+<body>
+	
+<div id='map'></div>
+<!--buttons for language switching -->
+<div class='settings'>
+	<ul id="buttons">
+    	<li id='button-en' class='button'>Eng</li>
+    	<br>
+    	<li id='button-ru' class='button'>Рус</li>
+    	<br>
+    	<li id='button-ky' class='button'>Кыр</li>
+	</ul>
+	<!--menu for layer switchers -->
+	<nav id="menu"></nav>
+</div>
+
+<div id='features'>
+	<div id='feature-title'></div>
+	<div id='feature-content'></div>
+	<div id='backbutton'>Previous</div>
+	<div id='slidebutton'>Next</div>
+</div>
+
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoibWFkc2tpaWVyIiwiYSI6ImNpb2ZnaXVteTAwM3p2cGo3aHhqYnBkbWMifQ.cEswY6uB1-saGXwbS82DWA';
+var map = new mapboxgl.Map({
+    style: 'mapbox://styles/mapbox/dark-v9',
+    center: [72.796804, 40.536356], 
+    zoom: 12,
+    pitch: 45,
+    bearing: -17.6,
+    hash: true,
+    container: 'map'
+});
+
+var title = document.getElementById('feature-title');
+var description = document.getElementById('feature-content');
+
+var locations = [
+	{
+    	"id":"1",
+    	"title":"Disaster Risk in Osh",
+    	"description":"Osh faces challenges with small fires, flooding, and earthquakes. Narrow streets and blocked drainage grates are widespread, everyday risks that are difficult to track with the government's efforts alone. By getting citizens involved in mapping areas at risk, a network of thousands of volunteers can help prevent accidents before they happen.",
+    	"camera": {
+    		center:[ 72.796804, 40.536356],
+    		zoom:12,
+    		pitch:45
+    	}
+    }
+	,{
+    	"id":"2",
+    	"title":"Pavement Floods",
+    	"description":"Paved and asphalt roads (in red) don't allow rainwater to soak into the ground, and raise the risk of flooding. Taller buildings (in green) offer save refuges for floods, while low buildings (in orange) are more at risk. Watchful citizens should report blocked drainage systems, particularly around paved roads to +996 703 22 13 12. Missing paved roads can be mapped on OpenStreetMap.org.",
+    	"camera": {
+    		center:[72.80042, 40.5497],
+    		zoom:17.26,
+    		pitch:50
+    	}
+    }
+    ,{
+    	"id":"3",
+    	"title":"Reaching out for help",
+    	"description":"Densely packed neighbourhoods require more services such as police and fire stations nearby to ensure safety. Blue areas are closer to first responders, while red areas are farthest away and in most risk. Mouse over the white service points to check if any information is missing and email oshmapping@ifrc.org with details.",
+    	"camera": {
+    		center:[72.8119, 40.5285],
+    		zoom:15.36,
+    		pitch:30
+    	}
+    }		
+    ,{
+   		 "id":"4",
+    	"title":"Mapathons",
+    	"description":"Parts of the city are missing information such as buildings, their height, what kinds of roads, and infrastructure such as bridges and water pumps.  You can be part of the solution by joining one of our walking mapping tours and using GPS technology to put your neighbourhood on the map (email oshmapping@ifrc.org for details). To work from home, just click on Improve This Map in the bottom right corner of this website.",
+    	"camera": {
+    		center:[72.7959, 40.5641],
+    		zoom:15.5,
+    		pitch:30
+    	}
+    }
+    ];
+// https://www.aaas.org/page/high-resolution-satellite-imagery-assessment-osh-kyrgyzstan - Satellite assessment of damage to Osh neighbourhoods from riots in 2010
+
+//function to make the camera pan to the next slide    
+function playback(index) {
+    title.textContent = locations[index].title;
+    description.textContent = locations[index].description;
+    // Animate the map position based on camera properties
+    map.flyTo(locations[index].camera);
+}
+// Toggle visible layers
+var toggleableLayerIds = [ 'Distance to responder','First responder' ];
+
+for (var i = 0; i < toggleableLayerIds.length; i++) {
+    var id = toggleableLayerIds[i];
+
+    var link = document.createElement('a');
+    link.href = '#';
+    link.className = 'active';
+    link.textContent = id;
+
+    link.onclick = function (e) {
+        var clickedLayer = this.textContent;
+        e.preventDefault();
+        e.stopPropagation();
+
+        var visibility = map.getLayoutProperty(clickedLayer, 'visibility');
+
+        if (visibility === 'visible') {
+            map.setLayoutProperty(clickedLayer, 'visibility', 'none');
+            this.className = '';
+        } else {
+            this.className = 'active';
+            map.setLayoutProperty(clickedLayer, 'visibility', 'visible');
+        }
+    };
+
+    var layers = document.getElementById('menu');
+    layers.appendChild(link);
+}
+
+map.on('load', function() {
+	//Load external GeoJSON files
+	map.addSource("paved-roads", {
+            "type": "geojson",
+            "data": "Osh_OSM/paved_roads.geojson"
+        });
+	map.addSource("servicesgeojson", {
+            "type": "geojson",
+            "data": "Osh_OSM/shelters.geojson"
+        });
+	map.addSource("servicesbuffer", {
+            "type": "geojson",
+            "data": "Osh_OSM/services_buffer.geojson"
+        });
+	 map.addSource("maproutes", {
+            "type": "geojson",
+            "data": "Osh_OSM/mappingroutes.geojson"
+        });
+	// Add zoom and rotation controls to the map.
+	map.addControl(new mapboxgl.NavigationControl());
+	map.addControl(new mapboxgl.FullscreenControl());
+
+    // Insert the building-height (from OSM) layer beneath any symbol layer.
+    var layers = map.getStyle().layers.reverse();
+    var labelLayerIdx = layers.findIndex(function (layer) {
+        return layer.type !== 'symbol';
+    });
+    var labelLayerId = labelLayerIdx !== -1 ? layers[labelLayerIdx].id : undefined;
+    
+    // Add layers
+    map.addLayer({
+            "id": "riskroads",
+            "type": "line",
+            "source": "paved-roads",
+         	"paint":{
+         		"line-color":"#ff0000",
+         		"line-width":3
+         	},  
+        });
+
+    map.addLayer({
+            "id": "First responder",
+            "type": "circle",
+            "source": "servicesgeojson",  
+         	"properties": {
+                        "description": "<strong>City Services</strong><p>Hospitals and police stations to ask for help.</p>"
+            }
+            ,"paint":{
+            	"circle-color":"#e5efc6"
+            }
+        });
+
+    map.addLayer({
+        'id': '3d-buildings',
+        'source': 'composite',
+        'source-layer': 'building',
+        'filter': ['==', 'extrude', 'true'],
+        'type': 'fill-extrusion',
+        'minzoom': 13,
+        'paint': {
+            //pale yellow -  'fill-extrusion-color': '#e5efc6',
+            //Colour the buildings by their height
+            'fill-extrusion-color': { 
+            	'property': 'height',
+            	'stops':[
+            	[0, '#f09422'],
+            	[50, '#adff2f']
+            	]
+            },	
+            'fill-extrusion-height': {
+                'type': 'identity',
+                'property': 'height'
+            },
+            'fill-extrusion-base': {
+                'type': 'identity',
+                'property': 'min_height'
+            },
+            'fill-extrusion-opacity': .6
+        }
+    }, labelLayerId);
+ 
+ 	map.addLayer({
+            "id": "Distance to responder",
+            "type": "fill",
+            "source": "servicesbuffer",
+         	"paint":{
+         		"fill-color":{
+         			'property': 'distance',
+            		'stops':[
+            		[250, '#2c7bb6']
+            		,[500, '#abd9e9']
+            		,[1000, '#fdae61']
+            		,[1500, '#d7191c']
+            		]
+         		},
+         		"fill-opacity":0.3
+         	},  
+        });
+
+ 	//map.addLayer({
+     //       "id": "maproutes"
+     //       ,"type": "line"
+     //       ,"source": "maproutes"
+     //       ,"paint":{
+     //       	"line-width":8
+     //           ,"line-color":{
+     //               'type':'identity',
+     //               'property':'color'
+     //           }
+                //'line-color':'#ff0000'
+     //       }  
+     //   });
+     map.addLayer({
+            "id": "mappyroutes"
+            ,"type": "line"
+            ,"layout":{"visibility":'none'}
+            ,"source": {		
+			
+            'type': 'geojson',
+            'data': {
+                'type': 'FeatureCollection',
+                'features': [{
+                    'type': 'Feature',
+                    'properties': {
+                        'color': '#00ff04' ,'maplead':'Asel','date':'18-11-2017','contact':'0701 22 98 51'
+                    },
+                    'geometry': {
+                        'type': 'LineString',
+                        'coordinates': [[
+              72.791743,
+              40.567898
+            ],
+            [
+              72.791467,
+              40.567889
+            ],
+            [
+              72.791495,
+              40.567735
+            ],
+            [
+              72.79152,
+              40.567547
+            ],
+            [
+              72.791565,
+              40.567354
+            ],
+            [
+              72.791599,
+              40.56712
+            ],
+            [
+              72.791815,
+              40.567115
+            ],
+            [
+              72.79204,
+              40.567112
+            ],
+            [
+              72.792356,
+              40.567145
+            ],
+            [
+              72.792362,
+              40.566866
+            ],
+            [
+              72.792376,
+              40.566595
+            ],
+            [
+              72.792387,
+              40.566337
+            ],
+            [
+              72.792369,
+              40.566145
+            ],
+            [
+              72.792382,
+              40.565874
+            ],
+            [
+              72.792383,
+              40.565574
+            ],
+            [
+              72.792398,
+              40.565296
+            ],
+            [
+              72.792412,
+              40.565025
+            ],
+            [
+              72.792415,
+              40.564862
+            ],
+            [
+              72.792763,
+              40.564871
+            ],
+            [
+              72.793123,
+              40.564862
+            ]
+          ],
+          "type": "LineString"
+        }
+        
+      },
+      {
+        "type": "Feature",
+        "properties": {'color':'#fdff00','maplead':'Gulnara','date':'13-01-2018','contact':'0705 12 64 72'},
+        "geometry": {
+          "coordinates": [
+            [
+              72.791749,
+              40.567889
+            ],
+            [
+              72.791927,
+              40.56789
+            ],
+            [
+              72.792194,
+              40.567893
+            ],
+            [
+              72.79249,
+              40.567899
+            ],
+            [
+              72.792748,
+              40.567903
+            ],
+            [
+              72.793019,
+              40.567914
+            ],
+            [
+              72.793039,
+              40.567728
+            ],
+            [
+              72.793052,
+              40.567558
+            ],
+            [
+              72.793074,
+              40.567377
+            ],
+            [
+              72.79309,
+              40.567235
+            ],
+            [
+              72.793094,
+              40.56719
+            ],
+            [
+              72.793103,
+              40.567146
+            ],
+            [
+              72.793099,
+              40.566914
+            ],
+            [
+              72.793106,
+              40.566638
+            ],
+            [
+              72.793111,
+              40.566403
+            ],
+            [
+              72.793119,
+              40.566123
+            ],
+            [
+              72.793119,
+              40.565842
+            ],
+            [
+              72.793119,
+              40.565569
+            ],
+            [
+              72.793131,
+              40.56528
+            ],
+            [
+              72.793136,
+              40.565041
+            ],
+            [
+              72.793137,
+              40.564856
+            ],
+            [
+              72.793376,
+              40.564861
+            ],
+            [
+              72.793571,
+              40.56486
+            ],
+            [
+              72.793768,
+              40.564862
+            ],
+            [
+              72.793854,
+              40.564865
+            ],
+            [
+              72.793855,
+              40.564878
+            ],
+            [
+              72.793855,
+              40.565069
+            ],
+            [
+              72.793843,
+              40.565221
+            ],
+            [
+              72.793838,
+              40.56536
+            ],
+            [
+              72.793832,
+              40.565504
+            ],
+            [
+              72.793838,
+              40.565621
+            ],
+            [
+              72.793832,
+              40.56579
+            ],
+            [
+              72.793832,
+              40.565894
+            ],
+            [
+              72.793825,
+              40.566022
+            ],
+            [
+              72.79382,
+              40.566155
+            ],
+            [
+              72.793812,
+              40.566332
+            ],
+            [
+              72.793809,
+            40.566476
+          ],
+          [
+            72.793809,
+            40.566645
+          ],
+          [
+            72.793799,
+            40.566824
+          ],
+          [
+            72.793798,
+            40.566975
+          ],
+          [
+            72.793792,
+            40.567097
+          ],
+          [
+            72.793783,
+            40.567138
+          ],
+          [
+            72.793517,
+            40.567136
+          ],
+          [
+            72.793315,
+            40.567136
+          ],
+          [
+            72.793212,
+            40.567134
+          ],
+          [
+            72.792355,
+            40.567128
+          ]
+        ],
+        "type": "LineString"
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {'color':'#e300ff','maplead':'Muslim','date':'27-12-2017','contact':'0702 21 21 51'},
+      "geometry": {
+        "coordinates": [
+          [
+            72.791739,
+            40.567899
+          ],
+          [
+            72.791473,
+            40.567877
+          ],
+          [
+            72.791529,
+            40.567572
+          ],
+          [
+            72.791575,
+            40.567237
+          ],
+          [
+            72.791602,
+            40.56709
+          ],
+          [
+            72.791628,
+            40.566871
+          ],
+          [
+            72.791637,
+            40.56666
+          ],
+          [
+            72.791671,
+            40.566475
+          ],
+          [
+            72.791685,
+            40.566276
+          ],
+          [
+            72.791686,
+            40.566071
+          ],
+          [
+            72.791706,
+            40.565801
+          ],
+          [
+            72.791719,
+            40.565569
+          ],
+          [
+            72.79171,
+            40.56534
+          ],
+          [
+            72.791713,
+            40.565123
+          ],
+          [
+            72.791716,
+            40.564985
+          ],
+          [
+            72.791716,
+            40.564868
+          ],
+          [
+            72.791437,
+            40.564872
+          ],
+          [
+            72.79116,
+            40.564865
+          ],
+          [
+            72.79097,
+            40.564862
+          ],
+          [
+            72.790962,
+            40.56515
+          ],
+          [
+            72.790957,
+            40.565416
+          ],
+          [
+            72.790958,
+            40.565733
+          ],
+          [
+            72.790951,
+            40.56601
+          ],
+          [
+            72.790926,
+            40.566307
+          ],
+          [
+            72.790921,
+            40.566574
+          ],
+          [
+            72.790899,
+            40.566772
+          ],
+          [
+            72.790901,
+            40.567005
+          ],
+          [
+            72.790907,
+            40.567128
+          ],
+          [
+            72.790906,
+            40.567295
+          ],
+          [
+            72.790869,
+            40.567496
+          ],
+          [
+            72.790869,
+            40.567658
+          ],
+          [
+            72.79087,
+            40.567491
+          ],
+          [
+            72.790892,
+            40.567293
+          ],
+          [
+            72.790892,
+            40.567093
+          ],
+          [
+            72.79112,
+            40.567084
+          ],
+          [
+            72.791351,
+            40.567103
+          ],
+          [
+            72.791598,
+            40.567112
+          ]
+        ],
+        "type": "LineString"
+      }
+    }
+  ],
+  "type": "FeatureCollection"
+}
+ 			},
+ 			'paint': {
+            'line-width': 8,
+            'line-color': {
+                'type': 'identity',
+                'property': 'color'
+            }
+       		}
+       	});
+    // Create a popup, but don't add it to the map yet.
+    var popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+    });
+    // Hover event
+    map.on('mouseenter', 'First responder', function(e) {
+        // Change the cursor style as a UI indicator.
+        map.getCanvas().style.cursor = 'pointer';
+        // Populate the popup and set its coordinates
+        // based on the feature found.
+        popup.setLngLat(e.features[0].geometry.coordinates)
+            .setHTML('<h3>City Service</h3>' +
+            	'<ul>' +
+            	'<li>Name: <b>' + e.features[0].properties.name + '</b></li>' +
+            	'<li>Service: <b>' + e.features[0].properties.amenity + '</b></li>' +
+            	'<li>Phone #: <b>' + e.features[0].properties.phone + '</b></li>' +
+            	'</ul>')
+            .addTo(map);
+    });
+    map.on('click', 'mappyroutes', function(e) {
+        // Change the cursor style as a UI indicator.
+        map.getCanvas().style.cursor = 'pointer';
+        // Populate the line popup and set its coordinates based on the first coordinates of the line
+        popup.setLngLat(e.lngLat)
+            .setHTML('<h3>Walking Mapping Session</h3>' +
+            	'<ul>' +
+            	'<li>Lead mapper: <b>' + e.features[0].properties.maplead + '</b></li>' +
+            	'<li>Date of session: <b>' + e.features[0].properties.date + '</b></li>' +
+            	'<li>Phone #: <b>' + e.features[0].properties.contact + '</b></li>' +
+            	'</ul>')
+            .addTo(map);
+    });
+	map.on('click', 'Distance to responder', function(e) {
+        // Change the cursor style as a UI indicator.
+        map.getCanvas().style.cursor = 'pointer';
+        // Populate the line popup and set its coordinates based on the first coordinates of the polygon
+        popup.setLngLat(e.lngLat)
+            .setHTML(
+            	'Distance to responder: <b>' + e.features[0].properties.distance + ' meters </b>' 
+            	)
+            .addTo(map);
+    });
+
+    map.on('mouseleave', 'First responder', function() {
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+    });
+     map.on('mouseleave', 'mappyroutes', function() {
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+    });
+      map.on('mouseleave', 'Distance to responder', function() {
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+    });
+    
+    // Click on features to get their OSM data
+    //map.on('click', function (e) {
+    //var features = map.queryRenderedFeatures(e.point);
+    //document.getElementById('features').innerHTML = JSON.stringify(features, null, 2);	
+	//});
+
+    //To change the language of the map data
+    document.getElementById('buttons').addEventListener('click', function(event) {
+    var language = event.target.id.substr('button-'.length);
+    // Use setLayoutProperty to set the value of a layout property in a style layer.
+    // The three arguments are the id of the layer, the name of the layout property,
+    // and the new property value.
+    map.setLayoutProperty('country-label-lg', 'text-field', '{name_' + language + '}');
+    map.setLayoutProperty('road-label-large', 'text-field', '{name_' + language + '}');
+    map.setLayoutProperty('road-label-medium', 'text-field', '{name_' + language + '}');
+    map.setLayoutProperty('road-label-small', 'text-field', '{name_' + language + '}');
+    map.setLayoutProperty('place-town', 'text-field', '{name_' + language + '}');
+    map.setLayoutProperty('place-village', 'text-field', '{name_' + language + '}');
+    map.setLayoutProperty('place-hamlet', 'text-field', '{name_' + language + '}');
+    map.setLayoutProperty('place-suburb', 'text-field', '{name_' + language + '}');
+    map.setLayoutProperty('place-neighbourhood', 'text-field', '{name_' + language + '}');
+	});
+
+    //Pans the camera to the next or previous location on "locations" when the slidebutton is clicked
+	index = 0;
+    document.getElementById('slidebutton').addEventListener('click', function(event) {
+        index = (index + 1 === locations.length) ? 0 : index + 1;
+            playback(index);
+            //turns on or off the buffer layer depending on what slide you are currently viewing
+            tempvar = (index === 2) ? map.setLayoutProperty('Distance to responder', 'visibility','visible') : map.setLayoutProperty('Distance to responder', 'visibility','none');
+            tempvartwo = (index === 3) ? map.setLayoutProperty('mappyroutes', 'visibility','visible') : map.setLayoutProperty('mappyroutes', 'visibility','none');
+    });
+    document.getElementById('backbutton').addEventListener('click', function(event) {
+        index = (index - 1 === -1) ? locations.length-1 : index - 1;
+            playback(index);
+            //turns on or off the buffer layer depending on what slide you are currently viewing
+            tempvar = (index === 2) ? map.setLayoutProperty('Distance to responder', 'visibility','visible') : map.setLayoutProperty('Distance to responder', 'visibility','none');
+            tempvartwo = (index === 3) ? map.setLayoutProperty('mappyroutes', 'visibility','visible') : map.setLayoutProperty('mappyroutes', 'visibility','none');
+    });
+    // Start the playback animation for the prepared slides
+    playback(index);
+});
+</script>
+</body>
+</html>
