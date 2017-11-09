@@ -242,19 +242,19 @@ map.on('load', function() {
 	//Load external GeoJSON files
 	map.addSource("paved-roads", {
             "type": "geojson",
-            "data": "Osh_OSM/paved_roads.geojson"
+            "data": "paved_roads.geojson"
         });
 	map.addSource("servicesgeojson", {
             "type": "geojson",
-            "data": "Osh_OSM/shelters.geojson"
+            "data": "shelters.geojson"
         });
 	map.addSource("servicesbuffer", {
             "type": "geojson",
-            "data": "Osh_OSM/services_buffer.geojson"
+            "data": "services_buffer.geojson"
         });
 	 map.addSource("maproutes", {
             "type": "geojson",
-            "data": "Osh_OSM/mappingroutes.geojson"
+            "data": "mappingroutes.geojson"
         });
 	// Add zoom and rotation controls to the map.
 	map.addControl(new mapboxgl.NavigationControl());
