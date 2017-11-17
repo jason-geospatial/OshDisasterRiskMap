@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>Traditional Practices Kyrgyzstan</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.42.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.42.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+    </style>
+</head>
+<body>
+
+
+<style>
+#map {
+    position: fixed;
+    width:50%;
+}
+#features {
+    width: 50%;
+    margin-left: 50%;
+    font-family: sans-serif;
+    overflow-y: scroll;
+    background-color: #fafafa;
+}
+section {
+    padding:  25px 50px;
+    line-height: 25px;
+    border-bottom: 1px solid #ddd;
+    opacity: 0.25;
+    font-size: 13px;
+}
+section.active {
+    opacity: 1;
+}
+section:last-child {
+    border-bottom: none;
+    margin-bottom: 200px;
+}
+ #info {
+        display: block;
+        position: relative;
+        margin: 0px auto;
+        width: 50%;
+        padding: 10px;
+        border: none;
+        border-radius: 3px;
+        font-size: 12px;
+        text-align: center;
+        color: #222;
+        background: #fff;
+    }
+</style>
+
+<div id='map'></div>
+<!--<pre id="info"></pre>-->
+<div id='features'>
+    <section id='bishkek' class='active'>
+        <h3>Bishkek - The city that stirs the drink</h3>
+        <p>Bishkek is the capital of Kyrgyzstan. Previously called Frunze, the name refers to the stick used to stir the Kyrgyz national drink: kumiz (fermented horse milk).</p>
+        <img src="https://kalpak-travel.com/wp-content/uploads/2017/03/48-Main-Chuy-street-Bishkek.jpg" height=300px>
+    </section>
+    <section id='talas'>
+        <br><br><br>
+        <h3>Talas - Home of Manas</h3>
+        <p>Manas is the legendary warrior-king of Kyrgyzstan. Revered for his skill as a horseman and conquests, singers called <i>manaschi</i> retell excerpts or even the entire story from the Epic of Manas. <i>Manaschi</i> follow an oral song-telling tradition where they adapt the story to their own unique rhythm and patterns to express the emotions behind each chapter.</p>
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/4fq3vZYbi08" frameborder="0" allowfullscreen></iframe>
+    </section>
+    <section id='issyk-kul'>
+        <br><br><br>
+        <h3>Issyk-kul</h3>
+        <p>Issyk-kul is famous for its deep lake ringed by valleys and mountains. Tourism in the summer months brings a festive air, with both locals looking to escape the heat and foreigners hoping to hike the mountains. Yurt workshops and eagle hunters allow tourists to experience colourful aspects of Kyrgyz culture.</p>
+        <img src="http://www.bradtguides.com/media/wysiwyg/destinations/asia/kyrgyzstan/Lake_Issyk_kyrgyzstan.jpg">
+    </section>
+    <section id='osh'>
+        <br><br><br>
+        <h3>Osh - The Cultural Capital</h3>
+        <p>Osh is Kyrgyzstan's cultural capital in the south. A diverse mix of of Uzbek, Tajik, and Kyrgyz traders come to buy and sell their wares.</p>
+        <img src="http://kabar.kg/eng/site/assets/files/3582/654_730x0.730x0.jpg" height=300px>
+    </section>
+    <section id='jalalabad'>
+        <br><br><br>
+        <h3>Jalalabad</h3>
+        <p>Jalalabad is situated on the ancient Silk Road that stretched through Central Asia. A number of mineral hot springs are located near the city, which have given rise to specialized baths or sanitoriums to treat individuals with health issues.</p>
+        <br><br><br><br><br><br><br><br><br><br><br><br><br>
+    </section>
+    
+</div>
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoibWFkc2tpaWVyIiwiYSI6ImNpb2ZnaXVteTAwM3p2cGo3aHhqYnBkbWMifQ.cEswY6uB1-saGXwbS82DWA';
+
+var map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/dark-v9',
+    center: [74.378753, 41.301072],
+    zoom: 6,
+    bearing: -15,
+    pitch: 45
+});
+
+var chapters = {
+    'bishkek': {
+        bearing: 27,
+        center: [74.604101, 42.8749707],
+        zoom: 10.5,
+        pitch: 20
+    },
+    'talas': {
+        duration: 6000,
+        center: [71.74522, 42.5820990],
+        bearing: 10,
+        zoom: 9,
+        pitch: 0
+    },
+    'issyk-kul': {
+        bearing: 15,
+        center: [77.0574028189, 42.6472885],
+        zoom: 13,
+        speed: 0.6,
+        pitch: 40
+    },
+    'osh': {
+        bearing: 90,
+        center: [72.7959399, 40.5354278],
+        zoom: 12
+    },
+    'jalalabad': {
+        bearing: 45,
+        center: [72.9981397, 40.934282],
+        zoom: 13,
+        pitch: 20,
+        speed: 0.5
+    }
+};
+
+// On every scroll event, check which element is on screen
+window.onscroll = function() {
+    var chapterNames = Object.keys(chapters);
+    for (var i = 0; i < chapterNames.length; i++) {
+        var chapterName = chapterNames[i];
+        if (isElementOnScreen(chapterName)) {
+            setActiveChapter(chapterName);
+            break;
+        }
+    }
+};
+
+var activeChapterName = 'bishkek';
+function setActiveChapter(chapterName) {
+    if (chapterName === activeChapterName) return;
+
+    map.flyTo(chapters[chapterName]);
+
+    document.getElementById(chapterName).setAttribute('class', 'active');
+    document.getElementById(activeChapterName).setAttribute('class', '');
+
+    activeChapterName = chapterName;
+}
+
+function isElementOnScreen(id) {
+    var element = document.getElementById(id);
+    var bounds = element.getBoundingClientRect();
+    return bounds.top < window.innerHeight && bounds.bottom > 0;
+}
+//get coordinates of mouse pointer
+//map.on('mousemove', function (e) {
+//    document.getElementById('info').innerHTML =
+//        // e.point is the x, y coordinates of the mousemove event relative
+//        // to the top-left corner of the map
+//        JSON.stringify(e.point) + '<br />' +
+        // e.lngLat is the longitude, latitude geographical position of the event
+//        JSON.stringify(e.lngLat);
+//});
+</script>
+
+</body>
+</html>
