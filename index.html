@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-<!--Example using Mapbox GL Javascript to create 3D extruded buildings. Source: https://www.mapbox.com/mapbox-gl-js/example/3d-buildings/ -->
 <head>
     <meta charset='utf-8' />
     <title>Osh Risk Mapping</title>
@@ -129,6 +128,10 @@
     	<li id='button-ru' class='button'>Рус</li>
     	<br>
     	<li id='button-ky' class='button'>Кыр</li>
+	<br>
+		<form>
+	<input type="button" value="Links" onclick="./index_tradprac.html/>
+		</form>
 	</ul>
 	<!--menu for layer switchers -->
 	<nav id="menu"></nav>
@@ -815,7 +818,7 @@ map.on('load', function() {
        	});
     // Create a popup, but don't add it to the map yet.
     var popup = new mapboxgl.Popup({
-        closeButton: false,
+        //closeButton: false,
         closeOnClick: false
     });
     // Hover event
